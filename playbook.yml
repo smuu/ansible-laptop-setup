@@ -1,0 +1,319 @@
+---
+- name: "Playing with Ansible and Git"
+  hosts: localhost
+  connection: local
+  roles:
+
+    - role: gantsign.oh-my-zsh
+      users:
+        - username: samuel
+          oh_my_zsh:
+            theme: gnzh
+            update_mode: reminder
+            plugins:
+              - git
+              - aliases
+              - ansible
+              - autoenv
+              - chucknorris
+              - command-not-found
+              - copyfile
+              - copypath
+              - docker
+              - docker-compose
+              - emoji
+              - emoji-clock
+              - github
+              - gitignore
+              - golang
+              - gpg-agent
+              - helm
+              - history
+              - kops
+              - kubectl
+              - kubectx
+              - minikube
+              - node
+              - npm
+              - nvm
+              - pip
+              - pipenv
+              - postgres
+              - pylint
+              - python
+              - rust
+              - ssh-agent
+              - sudo
+              - systemd
+              - terraform
+              - ubuntu
+              - vscode
+              - zsh-interactive-cd
+
+    - name: install and setup vs-code
+      role: gantsign.visual-studio-code
+      users:
+        - username: samuel
+          visual_studio_code_extensions:
+            - cschleiden.vscode-github-actions
+            - editorconfig.editorconfig
+            - exiasr.hadolint
+            - github.copilot
+            - github.copilot-labs
+            - golang.go
+            - hashicorp.terraform
+            - hediet.vscode-drawio
+            - ms-azuretools.vscode-docker
+            - ms-kubernetes-tools.vscode-kubernetes-tools
+            - ms-vscode-remote.remote-containers
+            - oderwat.indent-rainbow
+            - pascalreitermann93.vscode-yaml-sort
+            - redhat.ansible
+            - rust-lang.rust-analyzer
+            - sonarsource.sonarlint-vscode
+            - yzhang.markdown-all-in-one
+            - znck.grammarly
+          visual_studio_code_settings: {
+            "redhat.telemetry.enabled": false,
+            "github.copilot.inlineSuggest.enable": false,
+            "editor.inlineSuggest.enabled": true,
+            "hadolint.hadolintPath": "/usr/local/bin/hadolint",
+            "grammarly.selectors": [
+              {
+                "language": "markdown",
+                "scheme": "file"
+              }
+            ]
+          }
+
+    - name: Install go
+      role: gantsign.golang
+
+    - name: Install node
+      become: true
+      role: geerlingguy.nodejs
+      nodejs_version: "18.x"
+      nodejs_install_npm_user: samuel
+
+  tasks:
+
+    - name: Always add ssh keys to agent
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.ssh/config
+        line: AddKeysToAgent yes
+        create: true
+        mode: 0644
+
+    - name: Add golang package to PATH in zshrc
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: export PATH={{ ansible_local.golang.general.home }}/bin:$PATH
+
+    - name: Add golang installed packages to PATH in zshrc
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: export PATH=/home/samuel/go/bin:$PATH
+
+    - name: Add kube config to promt
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: RPS1='$(kubectx_prompt_info)'
+        regexp: '^RPS1='
+
+    - name: Add vim as visual editor
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: export VISUAL=vim
+
+    - name: Add vim as editor
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: export EDITOR="$VISUAL"
+
+    - name: Add vim as git editor
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: export GIT_EDITOR=vim
+
+#    - name: Add universe repository
+#      ansible.builtin.apt_repository:
+#        repo: deb http://archive.ubuntu.com/ubuntu jammy universe
+
+    - name: Install pre apt packages
+      become: true
+      ansible.builtin.apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+
+    - name: Add Apt signing key for docker
+      become: true
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+
+    - name: Add Apt signing key for google cloud
+      become: true
+      ansible.builtin.apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        keyring: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+    - name: Add docker repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable
+        filename: docker
+
+    - name: Add kubernetes repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+        filename: kubernetes
+
+    - name: Add Apt signing key FirefoxPWA
+      become: true
+      ansible.builtin.apt_key:
+        url: https://packagecloud.io/filips/FirefoxPWA/gpgkey
+        keyring: /usr/share/keyrings/firefoxpwa-keyring.gpg
+
+    - name: Add FirefoxPWA repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/usr/share/keyrings/firefoxpwa-keyring.gpg] https://packagecloud.io/filips/FirefoxPWA/any any main
+        filename: firefoxpwa
+
+    - name: Update repositories cache
+      become: true
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install apt packages
+      become: true
+      ansible.builtin.apt:
+        pkg:
+          - buildah
+          - containerd.io
+          - docker-ce
+          - docker-ce-cli
+          - docker-compose-plugin
+          - firefoxpwa
+          - flatpak
+          - fortune-mod
+          - git
+          - htop
+          - kubectl
+          - libfuse2
+          - podman
+          - vim
+          - xclip
+  #        - gnome-tweak-tool
+
+    - name: Install kvm apt packages
+      become: true
+      ansible.builtin.apt:
+        pkg:
+          - qemu-kvm
+          - libvirt-daemon-system
+          - libvirt-clients
+          - bridge-utils
+          - virt-manager # Optional: graphical user interface
+
+    - name: Add user to kvm group
+      become: true
+      ansible.builtin.user:
+        name: samuel
+        groups: libvirt
+        append: true
+
+    - name: Add the flathub flatpak repository remote to the user installation
+      community.general.flatpak_remote:
+        name: flathub
+        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+        method: user
+
+    - name: Install flatpak packages
+      community.general.flatpak:
+        name:
+          - ch.threema.threema-web-desktop
+          - com.axosoft.GitKraken
+          - com.brave.Browser
+          - com.discordapp.Discord
+          - com.github.Eloston.UngoogledChromium
+          - com.github.xournalpp.xournalpp
+          - com.google.Chrome
+          - com.mojang.Minecraft
+          - com.nextcloud.desktopclient.nextcloud
+          - com.obsproject.Studio
+          - com.opera.Opera
+          - com.spotify.Client
+          - com.valvesoftware.Steam
+          - im.gitter.Gitter
+          - im.riot.Riot
+          - info.portfolio_performance.PortfolioPerformance
+          - io.atom.Atom
+          - io.github.java_decompiler.jd-gui
+          - net.cozic.joplin_desktop
+          - net.cozic.joplin_desktop
+          - org.audacityteam.Audacity
+          - org.chromium.Chromium
+          - org.gimp.GIMP
+          - org.keepassxc.KeePassXC
+          - org.libreoffice.LibreOffice
+          - org.mozilla.firefox
+          - org.mozilla.Thunderbird
+          - org.raspberrypi.rpi-imager
+          - org.signal.Signal
+          - org.telegram.desktop
+          - org.videolan.VLC
+          - tv.kodi.Kodi
+          - us.zoom.Zoom
+        method: user
+
+    - name: Set flatpack chrome persmissions
+      ansible.builtin.command:
+        cmd: flatpak override --user --filesystem=~/.local/share/applications:create --filesystem=~/.local/share/icons:create com.google.Chrome
+
+    - name: Install pip packages
+      ansible.builtin.pip:
+        name:
+          - ansible
+          - ansible-lint
+
+    - name: Add pip packages to PATH in zshrc
+      ansible.builtin.lineinfile:
+        path: /home/samuel/.zshrc
+        line: export PATH=/home/samuel/.local/bin:$PATH
+
+    - name: Download minikube
+      ansible.builtin.get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        dest: /home/samuel/Downloads
+        mode: '0755'
+
+    - name: Download pcloud
+      ansible.builtin.get_url:
+        url: https://p-lux1.pcloud.com/cBZnrXB1wZijGdL3ZZZErhoc7Z2ZZbK4ZkZvP5pVZ9zZZ8RZTFZqzZpRZJHZIHZvFZaHZgLZlRZt7ZQ5ZCy4sVZsk3OqFjmEOhbgl65nUcmEhIvPaxy/pcloud
+        dest: /home/samuel/Downloads
+        mode: '0755'
+
+    - name: Download hadolint
+      become: true
+      ansible.builtin.get_url:
+        url: https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+        dest: /home/samuel/Downloads/hadolint
+        mode: '0755'
+
+    - name: Install hadolint
+      become: true
+      ansible.builtin.copy:
+        src: /home/samuel/Downloads/hadolint
+        dest: /usr/local/bin/hadolint
+        mode: '0755'
+
+    - name: Install minikube
+      become: true
+      ansible.builtin.command:
+        cmd: sudo install minikube-linux-amd64 /usr/local/bin/minikube
+        chdir: /home/samuel/Downloads

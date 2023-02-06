@@ -1,0 +1,5 @@
+roles:
+  - gantsign.oh-my-zsh
+  - gantsign.visual-studio-code
+  - geerlingguy.nodejs
+  - gantsign.golang
