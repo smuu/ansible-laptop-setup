@@ -11,7 +11,6 @@
             theme: gnzh
             update_mode: reminder
             plugins:
-              - git
               - aliases
               - ansible
               - autoenv
@@ -23,6 +22,7 @@
               - docker-compose
               - emoji
               - emoji-clock
+              - git
               - github
               - gitignore
               - golang
@@ -48,13 +48,17 @@
               - terraform
               - ubuntu
               - vscode
-              - zsh-interactive-cd
+              - zsh-autosuggestions
+              - zsh-history-substring-search
+              - zsh-syntax-highlighting
+              # - zsh-interactive-cd
 
     - name: install and setup vs-code
       role: gantsign.visual-studio-code
       users:
         - username: samuel
           visual_studio_code_extensions:
+            - bungcip.better-toml
             - cschleiden.vscode-github-actions
             - editorconfig.editorconfig
             - exiasr.hadolint
@@ -96,6 +100,21 @@
       nodejs_install_npm_user: samuel
 
   tasks:
+
+    - name: Add zsh-autosuggestions plugins
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions.git
+        dest: /home/samuel/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+
+    - name: Add zsh-history-substring-search plugins
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-history-substring-search.git
+        dest: /home/samuel/.oh-my-zsh/custom/plugins/zsh-history-substring-search"
+
+    - name: Add zsh-syntax-highlighting plugins
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+        dest: /home/samuel/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
 
     - name: Always add ssh keys to agent
       ansible.builtin.lineinfile:
@@ -274,6 +293,13 @@
     - name: Set flatpack chrome persmissions
       ansible.builtin.command:
         cmd: flatpak override --user --filesystem=~/.local/share/applications:create --filesystem=~/.local/share/icons:create com.google.Chrome
+
+    - name: Install classic snap packages
+      become: true
+      community.general.snap:
+        classic: true
+        name:
+          - kontena-lens
 
     - name: Install pip packages
       ansible.builtin.pip:
